@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
 
 Console.WriteLine($"--> CommandService Endpoint {app.Configuration["CommandService"]}");
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
