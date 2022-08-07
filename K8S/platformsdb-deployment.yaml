@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: platformsdb-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: platformsdb
   template:
     metadata:
       labels:
-        app: postgres
+        app: platformsdb
     spec:
       containers:
-        - name: postgres
+        - name: platformsdb
           image: postgres:10.1
           imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 5432
           envFrom:
             - configMapRef:
-                name: postgres-secret
+                name: platformsdb-secret
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: postgresdata
@@ -32,11 +32,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres-clusterip-srv
+  name: platformsdb-clusterip-srv
 spec:
   type: ClusterIP
   selector:
-    app: postgres
+    app: platformsdb
   ports:
   - name: 
     protocol: TCP

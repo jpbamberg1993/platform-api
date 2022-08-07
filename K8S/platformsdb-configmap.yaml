@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgres-secret
+  name: platformsdb-secret
   labels:
-    app: postgres
+    app: platformsdb
 data:
   POSTGRES_DB: platformsdb
   POSTGRES_USER: admin
