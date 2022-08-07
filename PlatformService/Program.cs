@@ -5,7 +5,18 @@ using PlatformService.SyncDataServices.Http;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+if (builder.Environment.IsProduction())
+{
+    Console.WriteLine("Using postgresql.");
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("PlatformsConnectionString")));
+}
+else
+{
+    Console.WriteLine("Using in memory database.");
+    builder.Services
+        .AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+}
 
 // DI
 builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
@@ -34,6 +45,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-PrepDb.PrepPopulation(app);
+PrepDb.PrepPopulation(app, builder.Environment.IsProduction());
 
 app.Run();
