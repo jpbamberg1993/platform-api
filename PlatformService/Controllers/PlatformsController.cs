@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data;
 using PlatformService.Dtos;
 using PlatformService.Models;
 using PlatformService.SyncDataServices.Http;
+using RabbitMQ.Client;
 
 namespace PlatformService.Controllers;
 
@@ -14,12 +16,18 @@ public class PlatformsController : ControllerBase
     private readonly IPlatformRepo _platformRepo;
     private readonly IMapper _mapper;
     private readonly ICommandDataClient _commandDataClient;
+    private readonly IMessageBusClient _messageBusClient;
 
-    public PlatformsController(IPlatformRepo platformRepo, IMapper mapper, ICommandDataClient commandDataClient)
+    public PlatformsController(
+        IPlatformRepo platformRepo,
+        IMapper mapper,
+        ICommandDataClient commandDataClient,
+        IMessageBusClient messageBusClient)
     {
         _platformRepo = platformRepo;
         _mapper = mapper;
         _commandDataClient = commandDataClient;
+        _messageBusClient = messageBusClient;
     }
 
     [HttpGet]
@@ -51,6 +59,7 @@ public class PlatformsController : ControllerBase
 
         var platformReadDto = _mapper.Map<PlatformReadDto>(platformModel);
 
+        // send sync message
         try
         {
             await _commandDataClient.SendPlatformToCommand(platformReadDto);
@@ -58,6 +67,19 @@ public class PlatformsController : ControllerBase
         catch (Exception e)
         {
             Console.WriteLine($"--> Could not send synchronously: {e.Message}.");
+        }
+
+        // send async message
+        try
+        {
+            var platformPublishedDto = _mapper.Map<PlatformPublishDto>(platformModel);
+            platformPublishedDto.Event = "Platform_Published";
+            _messageBusClient.PublishNewPlatform(platformPublishedDto);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"--> Could not send asynchronously: {e.Message}");
+            Console.WriteLine(e);
         }
 
         return CreatedAtRoute(nameof(GetPlatformById), new { Id = platformReadDto.Id }, platformReadDto);
