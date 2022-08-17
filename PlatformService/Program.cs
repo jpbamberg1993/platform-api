@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using PlatformService.AsyncDataServices;
 using PlatformService.Data;
+using PlatformService.SyncDataServices.Grpc;
 using PlatformService.SyncDataServices.Http;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,12 +19,19 @@ else
     Console.WriteLine("Using in memory database.");
     builder.Services
         .AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+    
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenLocalhost(5000, o => o.Protocols = HttpProtocols.Http2);
+    });
 }
+
 
 // DI
 builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
 builder.Services.AddHttpClient<ICommandDataClient, CommandDataClient>();
 builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
+builder.Services.AddGrpc();
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -46,6 +55,13 @@ Console.WriteLine($"--> CommandService Endpoint {app.Configuration["CommandServi
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGrpcService<GrpcPlatformService>();
+
+app.MapGet("/protos/platforms.proto", async context =>
+{
+    await context.Response.WriteAsync(File.ReadAllText("Protos/platforms.proto"));
+});
 
 PrepDb.PrepPopulation(app, builder.Environment.IsProduction());
 
