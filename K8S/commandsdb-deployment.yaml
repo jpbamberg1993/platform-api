@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: commandsdb-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: commandsdb
+  template:
+    metadata:
+      labels:
+        app: commandsdb
+    spec:
+      containers:
+        - name: commandsdb
+          image: postgres:10.1
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: commandsdb-secret
+          volumeMounts:
+            - mountPath: /var/lib/commandsdb/data
+              name: commandsdb
+      volumes:
+        - name: commandsdb
+          persistentVolumeClaim:
+            claimName: commandsdb-data-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: commandsdb-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: commandsdb
+  ports:
+  - protocol: TCP
+    port: 5433
+    targetPort: 5433
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: commandsdb-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: commandsdb
+  ports:
+    - protocol: TCP
+      port: 5433
+      targetPort: 5432

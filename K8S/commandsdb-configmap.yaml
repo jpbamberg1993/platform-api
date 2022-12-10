@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: commandsdb-secret
+  labels:
+    app: commandsdb
+data:
+  POSTGRES_DB: commandsdb
+  POSTGRES_USER: admin
+  POSTGRES_PASSWORD: test123
