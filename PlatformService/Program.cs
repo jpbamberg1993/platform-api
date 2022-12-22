@@ -17,9 +17,8 @@ if (builder.Environment.IsProduction())
 else
 {
     Console.WriteLine("Using in memory database.");
-    builder
-        .Services
-        .AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
+    builder.Services.AddDbContext<AppDbContext>(opt => 
+        opt.UseInMemoryDatabase("InMem"));
     
     builder.WebHost.ConfigureKestrel(options =>
     {

@@ -7,9 +7,19 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+if (builder.Environment.IsProduction())
+{
+    Console.WriteLine("Using postgresql.");
+    builder.Services.AddDbContext<AppDbContext>(opt => 
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("CommandsConnection")));
+}
+else
+{
+    Console.WriteLine("Using in memory database.");
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+        opt.UseInMemoryDatabase("InMem"));
+}
 
-builder.Services
-    .AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
 builder.Services.AddScoped<ICommandRepo, CommandRepo>();
 builder.Services.AddControllers();
 builder.Services.AddHostedService<MessageBusSubscriber>();
@@ -36,6 +46,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-PrepDb.PrepPopulation(app);
+PrepDb.PrepPopulation(app, app.Environment.IsProduction());
 
 app.Run();

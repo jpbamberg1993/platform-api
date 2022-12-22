@@ -1,31 +1,60 @@
 using CommandService.Models;
 using CommandService.SyncDataServices.Grpc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CommandService.Data;
 
 public static class PrepDb
 {
-    public static void PrepPopulation(IApplicationBuilder applicationBuilder)
+    public static void PrepPopulation(IApplicationBuilder app, bool isProduction)
     {
-        using var serviceScope = applicationBuilder.ApplicationServices.CreateScope();
+        using var serviceScope = app.ApplicationServices.CreateScope();
         var grpcClient = serviceScope.ServiceProvider.GetService<IPlatformDataClient>();
         var platforms = grpcClient.ReturnAllPlatforms();
 
-        SeedData(serviceScope.ServiceProvider.GetService<ICommandRepo>()!, platforms);
+        SeedData(
+            serviceScope.ServiceProvider.GetService<AppDbContext>()!,
+            serviceScope.ServiceProvider.GetService<ICommandRepo>()!,
+            platforms,
+            isProduction);
     }
 
-    private static void SeedData(ICommandRepo commandRepo, IEnumerable<Platform> platforms)
+    private static void SeedData(
+        AppDbContext context,
+        ICommandRepo commandRepo,
+        IEnumerable<Platform> platforms,
+        bool isProduction)
     {
-        Console.WriteLine("--> Seeding new platforms...");
-
-        foreach (var platform in platforms)
+        if (isProduction)
         {
-            if (!commandRepo.PlatformExistsWithExternalId(platform.ExternalId))
+            Console.WriteLine("--> Seeding Data...");
+            try
             {
-                commandRepo.CreatePlatform(platform);
+                context.Database.Migrate();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("--> Could not run migrations.");
+                Console.WriteLine(e);
             }
         }
 
-        commandRepo.SaveChanges();
+        if (!context.Platforms.Any())
+        {
+            Console.WriteLine("--> Seeding new platforms...");
+            foreach (var platform in platforms)
+            {
+                if (!commandRepo.PlatformExistsWithExternalId(platform.ExternalId))
+                {
+                    commandRepo.CreatePlatform(platform);
+                }
+            }
+
+            commandRepo.SaveChanges();
+        }
+        else
+        {
+            Console.WriteLine("--> We already have data, skipping seeding.");
+        }
     }
 }
