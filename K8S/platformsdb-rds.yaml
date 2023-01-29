@@ -1,0 +1,15 @@
+apiVersion: rds.services.k8s.aws/v1alpha1
+kind: DBInstance
+metadata:
+  name: "platformsdb"
+spec:
+  allocatedStorage: 20
+  dbInstanceClass: db.t4g.micro
+  dbInstanceIdentifier: "platformsdb"
+  engine: postgres
+  engineVersion: "14"
+  masterUsername: "postgres"
+  masterUserPassword:
+    namespace: kube-system
+    name: "platformsdb-password"
+    key: password

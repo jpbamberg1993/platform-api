@@ -13,8 +13,31 @@ spec:
         app: platformservice
     spec:
       containers:
-        - name: platformservice
-          image: paulbamberg22/platformservice:latest
+      - name: platformservice
+        image: paulbamberg22/platformservice:latest
+        env:
+        - name: PGHOST
+          valueFrom:
+            configMapKeyRef:
+              name: platformsdb-conn-cm
+              key: "kube-system.platformsdb-host"
+        - name: PGPORT
+          valueFrom:
+            configMapKeyRef:
+              name: platformsdb-conn-cm
+              key: kube-system.platformsdb-port
+        - name: PGUSER
+          valueFrom:
+            configMapKeyRef:
+              name: platformsdb-conn-cm
+              key: kube-system.platformsdb-user
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platformsdb-password
+              key: password
+        - name: ConnectionStrings__PlatformsConnectionString
+          value: Host=$(PGHOST);Port=$(PGPORT);Database=platformsdb;Username=$(PGUSER);Password=$(PGPASSWORD);
 ---
 apiVersion: v1
 kind: Service
@@ -25,11 +48,11 @@ spec:
   selector:
     app: platformservice
   ports:
-    - name: platformservice
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: platformgrpc
-      protocol: TCP
-      port: 666
-      targetPort: 666
+  - name: platformservice
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  - name: platformgrpc
+    protocol: TCP
+    port: 666
+    targetPort: 666
